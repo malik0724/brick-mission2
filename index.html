@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Brick Mission Stable - Complete</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background: #000;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  touch-action: none;
+}
+
+#gameContainer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(to bottom, #000011, #001122);
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Unique 4-side borders */
+.border {
+  position: absolute;
+  z-index: 100;
+}
+
+.top-border {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(90deg, 
+    #ff00ff, #00ffff, #ffff00, #ff0000, #00ff00, #ff00ff);
+  background-size: 300% 100%;
+  animation: borderMove 3s linear infinite;
+  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.5);
+}
+
+.bottom-border {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(90deg, 
+    #00ff00, #ff00ff, #ffff00, #00ffff, #ff0000, #00ff00);
+  background-size: 300% 100%;
+  animation: borderMove 3s linear infinite reverse;
+  box-shadow: 0 -5px 15px rgba(255, 0, 255, 0.5);
+}
+
+.left-border {
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 100%;
+  background: linear-gradient(0deg, 
+    #ff0000, #00ff00, #00ffff, #ffff00, #ff00ff, #ff0000);
+  background-size: 100% 300%;
+  animation: borderMoveVertical 3s linear infinite;
+  box-shadow: 5px 0 15px rgba(255, 255, 0, 0.5);
+}
+
+.right-border {
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 100%;
+  background: linear-gradient(0deg, 
+    #00ffff, #ffff00, #ff00ff, #ff0000, #00ff00, #00ffff);
+  background-size: 100% 300%;
+  animation: borderMoveVertical 3s linear infinite reverse;
+  box-shadow: -5px 0 15px rgba(0, 255, 255, 0.5);
+}
+
+@keyframes borderMove {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 300% 0%; }
+}
+
+@keyframes borderMoveVertical {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 300%; }
+}
+
+/* Game UI */
+#gameUI {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 50;
+}
+
+.ui-panel {
+  background: rgba(0, 20, 40, 0.9);
+  border: 2px solid #00ffff;
+  border-radius: 10px;
+  padding: 10px 20px;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.ui-item {
+  color: #00ffff;
+  font-size: 18px;
+  margin: 5px 0;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+}
+
+.ui-value {
+  color: #ffff00;
+  font-weight: bold;
+  margin-left: 5px;
+}
+
+/* Shooting Machine */
+#shootingMachine {
+  position: absolute;
+  bottom: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 60px;
+  background: linear-gradient(to bottom, #333, #111);
+  border: 3px solid #00ffff;
+  border-radius: 30px;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.7);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shooting-barrel {
+  width: 35px;
+  height: 35px;
+  background: radial-gradient(circle, #ffaa00, #ff5500);
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.8);
+  animation: barrelPulse 1.5s infinite alternate;
+}
+
+@keyframes barrelPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Controls */
+.controls {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  gap: 15px;
+  z-index: 50;
+}
+
+.control-btn {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #002244, #004488);
+  border: 3px solid #00ffff;
+  border-radius: 50%;
+  color: #00ffff;
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  transition: all 0.3s;
+  user-select: none;
+}
+
+.control-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+}
+
+/* 3D Menu Buttons */
+.menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 20, 40, 0.95);
+  border: 3px solid #00ffff;
+  border-radius: 20px;
+  padding: 30px;
+  z-index: 200;
+  min-width: 400px;
+  text-align: center;
+  display: none;
+  box-shadow: 0 0 50px rgba(0, 255, 255, 0.7);
+  backdrop-filter: blur(5px);
+}
+
+.menu h2 {
+  color: #00ffff;
+  margin-bottom: 20px;
+  font-size: 32px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+}
+
+.menu p {
+  color: white;
+  margin: 15px 0;
+  font-size: 18px;
+}
+
+.menu-btn {
+  background: linear-gradient(145deg, #002244, #004488);
+  border: 2px solid #00aaff;
+  border-top: 2px solid #00ffff;
+  border-left: 2px solid #00ffff;
+  border-right: 2px solid #0055aa;
+  border-bottom: 2px solid #0055aa;
+  color: #00ffff;
+  padding: 15px 30px;
+  border-radius: 10px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin: 10px;
+  min-width: 200px;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.5),
+    -2px -2px 4px rgba(255, 255, 255, 0.1),
+    inset 2px 2px 4px rgba(0, 170, 255, 0.3),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-btn:hover {
+  background: linear-gradient(145deg, #003366, #0055aa);
+  transform: translateY(-2px);
+  box-shadow: 
+    6px 6px 10px rgba(0, 0, 0, 0.6),
+    -3px -3px 6px rgba(255, 255, 255, 0.15),
+    inset 2px 2px 4px rgba(0, 170, 255, 0.4),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.menu-btn:active {
+  transform: translateY(1px);
+  box-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.5),
+    -1px -1px 2px rgba(255, 255, 255, 0.1),
+    inset 4px 4px 8px rgba(0, 0, 0, 0.5),
+    inset -2px -2px 4px rgba(0, 170, 255, 0.3);
+}
+
+.ability-btn {
+  background: linear-gradient(145deg, #442200, #884400);
+  border: 2px solid #ffaa00;
+  border-top: 2px solid #ffff00;
+  border-left: 2px solid #ffff00;
+  border-right: 2px solid #aa5500;
+  border-bottom: 2px solid #aa5500;
+  color: #ffff00;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.5),
+    -2px -2px 4px rgba(255, 255, 255, 0.1),
+    inset 2px 2px 4px rgba(255, 170, 0, 0.3),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.ability-btn:hover {
+  background: linear-gradient(145deg, #663300, #aa6600);
+  box-shadow: 
+    6px 6px 10px rgba(0, 0, 0, 0.6),
+    -3px -3px 6px rgba(255, 255, 255, 0.15),
+    inset 2px 2px 4px rgba(255, 170, 0, 0.4),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Level Select Buttons */
+.level-btn {
+  padding: 10px;
+  background: linear-gradient(145deg, #002244, #004488);
+  border: 2px solid #00aaff;
+  border-top: 2px solid #00ffff;
+  border-left: 2px solid #00ffff;
+  border-right: 2px solid #0055aa;
+  border-bottom: 2px solid #0055aa;
+  color: #00ffff;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70px;
+  position: relative;
+  box-shadow: 
+    3px 3px 6px rgba(0, 0, 0, 0.4),
+    -1px -1px 3px rgba(255, 255, 255, 0.1);
+}
+
+.level-btn:hover {
+  background: linear-gradient(145deg, #003366, #0055aa);
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 
+    5px 5px 8px rgba(0, 0, 0, 0.5),
+    -2px -2px 4px rgba(255, 255, 255, 0.15);
+}
+
+.level-btn.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #666;
+  background: linear-gradient(145deg, #222222, #444444);
+}
+
+.level-btn.completed {
+  background: linear-gradient(145deg, #004400, #006600);
+  border-color: #00ff00;
+  border-top: 2px solid #00ff00;
+  border-left: 2px solid #00ff00;
+  border-right: 2px solid #003300;
+  border-bottom: 2px solid #003300;
+}
+
+/* Stars */
+.stars-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.star {
+  width: 50px;
+  height: 50px;
+  background: #ffaa00;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  opacity: 0.3;
+  transform: scale(0.8);
+  transition: all 0.5s;
+}
+
+.star.active {
+  opacity: 1;
+  transform: scale(1);
+  animation: starGlow 1s infinite alternate;
+}
+
+@keyframes starGlow {
+  0% { filter: drop-shadow(0 0 5px #ffaa00); }
+  100% { filter: drop-shadow(0 0 20px #ffaa00); }
+}
+
+/* Level Star Animation */
+@keyframes starEarned {
+  0% { transform: scale(0) rotate(0deg); }
+  50% { transform: scale(1.2) rotate(180deg); }
+  100% { transform: scale(1) rotate(360deg); }
+}
+
+.star.earned {
+  animation: starEarned 0.8s ease-out forwards;
+}
+
+/* Ball Counter */
+#ballCounter {
+  position: absolute;
+  bottom: 220px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffff00;
+  font-size: 18px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 8px 20px;
+  border-radius: 15px;
+  border: 2px solid #ffff00;
+  z-index: 45;
+}
+
+/* Level Select Container */
+#levelSelectContainer {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 20px 0;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  border: 2px solid #00ffff;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.level-number {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.level-stars {
+  display: flex;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.level-star {
+  width: 15px;
+  height: 15px;
+  background: #ffaa00;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  opacity: 0.8;
+}
+
+.level-star.empty {
+  opacity: 0.3;
+}
+
+.lock-icon {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.unlock-animation {
+  animation: unlockLevel 0.5s ease-out;
+}
+
+@keyframes unlockLevel {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Shooting Guide */
+#shootingGuide {
+  position: absolute;
+  bottom: 270px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #00ffff;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px 15px;
+  border-radius: 10px;
+  border: 2px solid #00ffff;
+  z-index: 45;
+  opacity: 0.8;
+}
+
+/* Level Progress Bar */
+.level-progress {
+  position: absolute;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  border: 1px solid #00ffff;
+  overflow: hidden;
+  z-index: 45;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff00, #ffff00);
+  width: 0%;
+  transition: width 0.3s;
+}
+
+/* Game Status */
+#gameStatus {
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #00ffff;
+  font-size: 16px;
+  z-index: 45;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <!-- Canvas -->
+  <canvas id="gameCanvas"></canvas>
+  
+  <!-- Borders -->
+  <div class="border top-border"></div>
+  <div class="border bottom-border"></div>
+  <div class="border left-border"></div>
+  <div class="border right-border"></div>
+  
+  <!-- Level Progress -->
+  <div class="level-progress">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  
+  <!-- Game Status -->
+  <div id="gameStatus">Ready to shoot!</div>
+  
+  <!-- Game UI -->
+  <div id="gameUI">
+    <div class="ui-panel">
+      <div class="ui-item">LEVEL: <span id="levelDisplay" class="ui-value">1</span></div>
+      <div class="ui-item">SHOTS: <span id="shotsDisplay" class="ui-value">0/5</span></div>
+    </div>
+    <div class="ui-panel">
+      <div class="ui-item">SCORE: <span id="scoreDisplay" class="ui-value">0</span></div>
+      <div class="ui-item">BRICKS: <span id="bricksDisplay" class="ui-value">0</span></div>
+    </div>
+  </div>
+  
+  <!-- Shooting Machine -->
+  <div id="shootingMachine">
+    <div class="shooting-barrel"></div>
+  </div>
+  
+  <!-- Shooting Guide -->
+  <div id="shootingGuide">Click/Drag to aim, Release to shoot</div>
+  
+  <!-- Ball Counter -->
+  <div id="ballCounter">ACTIVE BALLS: <span id="activeBalls">0</span></div>
+  
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-btn" id="abilitiesBtn" title="Abilities">⚡</div>
+    <div class="control-btn" id="menuBtn" title="Menu">≡</div>
+  </div>
+</div>
+
+<!-- Start Menu -->
+<div class="menu" id="startMenu">
+  <h2>BRICK MISSION STABLE</h2>
+  <p>Destroy all bricks to advance!</p>
+  <p style="color:#ffff00">Unlocked Levels: <span id="unlockedLevels">1</span>/1000</p>
+  <div style="margin: 20px 0;">
+    <button class="menu-btn" id="startBtn">NEW GAME</button>
+    <button class="menu-btn" id="continueBtn">CONTINUE</button>
+    <button class="menu-btn" id="levelSelectBtn">LEVEL SELECT</button>
+    <button class="menu-btn" id="soundToggle">SOUND: ON</button>
+  </div>
+</div>
+
+<!-- Level Select Menu -->
+<div class="menu" id="levelMenu" style="display:none">
+  <h2>SELECT LEVEL</h2>
+  <p>Unlocked: <span id="maxUnlockedDisplay" style="color:#ffff00">1</span>/1000</p>
+  <div id="levelSelectContainer">
+    <div class="level-grid" id="levelGrid">
+      <!-- Levels will be added here -->
+    </div>
+  </div>
+  <div style="margin-top: 20px;">
+    <button class="menu-btn" id="backToMainBtn">BACK</button>
+  </div>
+</div>
+
+<!-- Main Menu -->
+<div class="menu" id="mainMenu" style="display:none">
+  <h2>GAME MENU</h2>
+  <div style="margin: 20px 0;">
+    <button class="menu-btn" id="resumeBtn">RESUME</button>
+    <button class="menu-btn" id="restartBtn">RESTART LEVEL</button>
+    <button class="menu-btn" id="mainMenuBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<!-- Abilities Menu -->
+<div class="menu" id="abilitiesMenu" style="display:none">
+  <h2>ABILITIES</h2>
+  <div style="margin: 20px 0;">
+    <button class="menu-btn ability-btn" id="laserBtn">LASER BALL (<span id="laserCountDisplay">3</span>)</button>
+    <button class="menu-btn ability-btn" id="fireballBtn">FIRE BALL (<span id="fireballCountDisplay">2</span>)</button>
+    <button class="menu-btn ability-btn" id="multiballBtn">MULTI BALL (<span id="multiballCountDisplay">1</span>)</button>
+    <button class="menu-btn" id="closeAbilitiesBtn">CLOSE</button>
+  </div>
+</div>
+
+<!-- Level Complete Menu -->
+<div class="menu" id="completeMenu" style="display:none">
+  <h2 style="color:#00ff00">LEVEL COMPLETE!</h2>
+  <p>You cleared level <span id="completedLevel" style="color:#ffff00">1</span>!</p>
+  <p>Shots Used: <span id="shotsUsed">0</span>/<span id="totalShots">5</span></p>
+  <p>Rating:</p>
+  <div class="stars-container">
+    <div class="star" id="star1"></div>
+    <div class="star" id="star2"></div>
+    <div class="star" id="star3"></div>
+  </div>
+  <div style="margin-top: 20px;">
+    <button class="menu-btn" id="nextLevelBtn">NEXT LEVEL</button>
+    <button class="menu-btn" id="menuAfterCompleteBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<!-- Game Over Menu -->
+<div class="menu" id="gameOverMenu" style="display:none">
+  <h2 style="color:#ff0000">GAME OVER</h2>
+  <p>You ran out of shots!</p>
+  <p>Final Score: <span id="finalScore" style="color:#ffff00">0</span></p>
+  <div style="margin-top: 20px;">
+    <button class="menu-btn" id="restartGameBtn">RESTART LEVEL</button>
+    <button class="menu-btn" id="menuAfterGameOverBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<script>
+// ============================================
+// COMPLETE WORKING GAME - BALL SHOOTING FIXED
+// ============================================
+
+// Get canvas and context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Audio context for sound effects
+let audioContext;
+let sounds = {};
+
+// Initialize audio
+function initAudio() {
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    createSounds();
+  } catch (e) {
+    console.log('Web Audio API not supported');
+  }
+}
+
+// Create sound effects
+function createSounds() {
+  // Button click sound
+  sounds.click = function() {
+    if (!audioContext || !game.soundEnabled) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.1);
+  };
+  
+  // Shoot sound
+  sounds.shoot = function() {
+    if (!audioContext || !game.soundEnabled) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 600;
+    oscillator.type = 'sawtooth';
+    
+    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.2);
+  };
+  
+  // Brick hit sound
+  sounds.hit = function(pitch = 300) {
+    if (!audioContext || !game.soundEnabled) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = pitch;
+    oscillator.type = 'square';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.15);
+  };
+  
+  // Brick destroy sound
+  sounds.destroy = function() {
+    if (!audioContext || !game.soundEnabled) return;
+    
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 100 + i * 200;
+        oscillator.type = 'triangle';
+        
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.1);
+      }, i * 50);
+    }
+  };
+  
+  // Unlock sound
+  sounds.unlock = function() {
+    if (!audioContext || !game.soundEnabled) return;
+    
+    for (let i = 0; i < 4; i++) {
+      setTimeout(() => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 300 + i * 100;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.2);
+      }, i * 100);
+    }
+  };
+}
+
+// Game state
+const game = {
+  // Basic state
+  state: 'menu',
+  currentLevel: 1,
+  maxUnlockedLevel: 1,
+  score: 0,
+  shotsUsed: 0,
+  totalShots: 5, // Level 1 starts with 5 shots
+  balls: [],
+  bricks: [],
+  activeBalls: 0,
+  totalBricks: 0,
+  
+  // Store stars for each completed level
+  levelStars: {}, // level: stars
+  
+  // Gameplay
+  aiming: false,
+  aimAngle: -Math.PI / 2,
+  aimX: 0,
+  aimY: 0,
+  canShoot: true,
+  mouseDown: false,
+  shootingQueue: [], // Queue for balls to be shot one by one
+  isShootingQueueActive: false,
+  ballReleaseTimer: 0,
+  ballReleaseDelay: 3, // Frames between each ball release
+  
+  // Abilities
+  abilities: {
+    laser: { count: 3, active: false },
+    fireball: { count: 2, active: false },
+    multiball: { count: 1, active: false }
+  },
+  
+  // Settings
+  soundEnabled: true,
+  
+  // Leve
