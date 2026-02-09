@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ji<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -822,4 +822,1095 @@ const game = {
   // Settings
   soundEnabled: true,
   
-  // Leve
+  // Level difficulty seed
+  levelSeed: 0,
+  
+  // Particles for effects
+  particles: []
+};
+
+// Initialize canvas
+function initCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+// Load game data
+function loadGameData() {
+  const saved = localStorage.getItem('brickMissionSave');
+  if (saved) {
+    try {
+const data = JSON.parse(saved);
+      game.maxUnlockedLevel = data.maxUnlockedLevel || 1;
+      game.score = data.score || 0;
+      game.levelStars = data.levelStars || {};
+      updateUI();
+    } catch (e) {
+      console.log('Error loading save');
+    }
+  }
+}
+
+// Save game data
+function saveGameData() {
+  const data = {
+    maxUnlockedLevel: game.maxUnlockedLevel,
+    score: game.score,
+    levelStars: game.levelStars
+  };
+localStorage.setItem('brickMissionSave', JSON.stringify(data));
+}
+
+// Update UI
+function updateUI() {
+  document.getElementById('levelDisplay').textContent = game.currentLevel;
+  document.getElementById('shotsDisplay').textContent = `${game.shotsUsed}/${game.totalShots}`;
+  document.getElementById('scoreDisplay').textContent = game.score;
+  document.getElementById('bricksDisplay').textContent = game.bricks.length;
+  document.getElementById('unlockedLevels').textContent = game.maxUnlockedLevel;
+  document.getElementById('maxUnlockedDisplay').textContent = game.maxUnlockedLevel;
+document.getElementById('activeBalls').textContent = game.activeBalls;
+  
+  // Update progress bar
+  if (game.totalBricks > 0) {
+    const progress = ((game.totalBricks - game.bricks.length) / game.totalBricks) * 100;
+    document.getElementById('progressFill').style.width = `${progress}%`;
+  }
+  
+  // Update game status
+  if (game.state === 'playing') {
+    if (game.activeBalls > 0) {
+      document.getElementById('gameStatus').textContent = `${game.activeBalls} balls active`;
+    } else if (game.canShoot) {
+      document.getElementById('gameStatus').textContent = `Ready to shoot! (${game.totalShots - game.shotsUsed} 
+shots left)`;
+    } else if (game.isShootingQueueActive) {
+      document.getElementById('gameStatus').textContent = `Releasing balls...`;
+    } else {
+      document.getElementById('gameStatus').textContent = 'Waiting...';
+    }
+  }
+}
+
+// Update abilities menu display
+function updateAbilitiesMenu() {
+  document.getElementById('laserCountDisplay').textContent = game.abilities.laser.count;
+  document.getElementById('fireballCountDisplay').textContent = game.abilities.fireball.count;
+document.getElementById('multiballCountDisplay').textContent = game.abilities.multiball.count;
+}
+
+// Seeded random function for consistent level generation
+function seededRandom(seed) {
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+// Create bricks for level (consistent for each level)
+function createBricks() {
+  game.bricks = [];
+  
+  // Set seed based on level for consistent generation
+  game.levelSeed = game.currentLevel *
+12345;
+  
+  // Calculate difficulty based on level
+  const baseRows = 4;
+  const baseCols = 6;
+  const rowIncrease = Math.floor(game.currentLevel / 3);
+  const colIncrease = Math.floor(game.currentLevel / 5);
+  
+  const rows = Math.min(8, baseRows + rowIncrease);
+  const cols = Math.min(10, baseCols + colIncrease);
+  
+  const brickWidth = Math.min(70, (canvas.width - 40) / cols - 5);
+  const brickHeight = 30;
+  const startX = 30;
+  const startY = 120;
+  
+  // Base HP increases with level
+  const baseHP = Math.min(99, game.currentLevel + 1);
+  
+  let brickCount = 0;
+  
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      // Use seeded random for consistent brick placement
+      const seed = game.levelSeed + r * 100 + c;
+      const rand = seededRandom(seed);
+      
+      // Create brick if random value is high enough (creates pattern)
+      if (rand > 0.3) {
+        const hp = Math.min(99, baseHP + r + Math.floor(game.currentLevel / 2));
+const h = Math.min(120, 120 - (hp * 1.2));
+        
+        const brick = {
+          x: startX + c * (brickWidth + 5),
+          y: startY + r * (brickHeight + 5),
+          width: brickWidth,
+          height: brickHeight,
+          hp: hp,
+          maxHP: hp,
+          h: h,
+          s: 100,
+          l: 50,
+          color: `hsl(${h}, 100%, 50%)`,
+          topColor: `hsl(${h}, 100%, 70%)`, // Lighter for top
+          sideColor: `hsl(${h}, 100%,
+30%)`, // Darker for side
+          shadow: `hsl(${h}, 100%, 20%)`,
+          hitTime: 0,
+          wobble: 0,
+          wobbleSpeed: 0,
+          wobbleAngle: 0,
+          isWobbling: false
+        };
+        game.bricks.push(brick);
+        brickCount++;
+      }
+    }
+  }
+  
+  game.totalBricks = brickCount;
+  
+  // Ensure minimum bricks
+  if (game.bricks.length < 5) {
+    for (let i = 0; i < 8; i++) {
+      const h = Math.min(120, 120 - (baseHP * 3));
+const brick = {
+        x: canvas.width/2 - 180 + (i % 4) * 95,
+        y: 150 + Math.floor(i / 4) * 45,
+        width: 90,
+        height: 30,
+        hp: baseHP,
+        maxHP: baseHP,
+        h: h,
+        s: 100,
+        l: 50,
+        color: `hsl(${h}, 100%, 50%)`,
+        topColor: `hsl(${h}, 100%, 70%)`,
+        sideColor: `hsl(${h}, 100%, 30%)`,
+        shadow: `hsl(${h}, 100%, 20%)`,
+        hitTime: 0,
+        wobble: 0,
+        wobbleSpeed: 0,
+        wobbleAngle: 0,
+        isWobbling: false
+      };
+      game.bricks.push(brick);
+      game.totalBricks++;
+    }
+  }
+}
+
+// Start a level
+function startLevel(level) {
+  if (level > game.maxUnlockedLevel) {
+    alert('Level locked! Complete previous levels to unlock.');
+    return;
+  }
+  
+  game.state = 'playing';
+  game.currentLevel = level;
+  game.shotsUsed = 0;
+  
+  // Shots increase by 1 every level (Level 1: 5, Level 2: 6, Level 3: 7, etc.)
+  game.totalShots = 5 + (level - 1);
+  
+  game.balls = [];
+  game.bricks = [];
+  game.activeBalls = 0;
+  game.particles = [];
+  game.aiming = false;
+  game.canShoot = true;
+  game.mouseDown = false;
+  game.totalBricks = 0;
+  game.shootingQueue = [];
+  game.isShootingQueueActive = false;
+  game.ballReleaseTimer = 0;
+  
+  // Reset abilities
+  game.abilities.laser.count = 3;
+  game.abilities.fireball.count = 2;
+game.abilities.multiball.count = 1;
+  game.abilities.laser.active = false;
+  game.abilities.fireball.active = false;
+  game.abilities.multiball.active = false;
+  
+  createBricks();
+  updateUI();
+  updateAbilitiesMenu(); // Update abilities menu display
+  
+  // Hide menus
+  hideAllMenus();
+}
+
+// Create a ball - DECREASED SIZE FROM 8 TO 5
+function createBall(x, y, angle, power = 1, type = 'normal') {
+  const speed = 8 + power;
+};
+  
+  game.balls.push(ball);
+  game.activeBalls++;
+  
+  // Play shoot sound for each ball
+  if (sounds.shoot) sounds.shoot();
+  
+  return ball;
+}
+
+// Shoot balls - Creates a queue of 15 balls to release one by one
+function shootBalls(angle) {
+  if (!game.canShoot || game.shotsUsed >= game.totalShots) return;
+  
+  game.shotsUsed++;
+  game.canShoot = false;
+  game.isShootingQueueActive = true;
+  
+  const machineX = canvas.width / 2;
+const machineY = canvas.height - 150;
+  
+  // Create queue of 15 balls with different angles
+  const spread = Math.PI / 6; // 30 degree spread
+  
+  // Clear any existing queue
+  game.shootingQueue = [];
+  
+  // Determine ball type based on active ability
+  let ballType = 'normal';
+  let power = 1;
+  
+  if (game.abilities.laser.active && game.abilities.laser.count > 0) {
+    ballType = 'laser';
+    power = 1.5;
+// Count will be decreased when the ability is actually used (balls are created)
+  } else if (game.abilities.fireball.active && game.abilities.fireball.count > 0) {
+    ballType = 'fireball';
+    power = 2;
+    // Count will be decreased when the ability is actually used (balls are created)
+  }
+  
+  // Create 15 balls with slight angle variations
+  for (let i = 0; i < 15; i++) {
+    const offset = (i / 14) - 0.5; // -0.5 to 0.5
+    const ballAngle = angle + (offset * spread * 0.5); // Reduced spread for better control
+    
+    game.shootingQueue.push({
+      x: machineX,
+      y: machineY,
+      angle: ballAngle,
+      power: power,
+      type: ballType,
+      abilityUsed: game.abilities.laser.active || game.abilities.fireball.active
+    });
+  }
+  
+  // Apply multiball ability (extra balls)
+  if (game.abilities.multiball.active && game.abilities.multiball.count > 0) {
+    // Add 5 extra balls with wider spread
+for (let i = 0; i < 5; i++) {
+      const offset = (i / 4) - 0.5;
+      const ballAngle = angle + (offset * spread);
+      game.shootingQueue.push({
+        x: machineX,
+        y: machineY,
+        angle: ballAngle,
+        power: 1,
+        type: 'normal',
+        abilityUsed: true // This is for multiball
+      });
+    }
+    // Multiball count will be decreased when the ability is actually used
+  }
+  
+  // Reset release timer
+  game.ballReleaseTimer = game.ballReleaseDelay;
+  
+  updateUI();
+}
+
+// Process shooting queue - release balls one by one
+function processShootingQueue() {
+  if (game.shootingQueue.length > 0) {
+    game.ballReleaseTimer--;
+    
+    if (game.ballReleaseTimer <= 0) {
+      // Release one ball from the queue
+      const ballInfo = game.shootingQueue.shift();
+      createBall(ballInfo.x, ballInfo.y, ballInfo.angle, ballInfo.power, ballInfo.type);
+      
+      // Decrease ability count if this ball used an ability
+      if (ballInfo.abilityUsed) {
+        if (game.abilities.laser.active) {
+          game.abilities.laser.count--;
+          game.abilities.laser.active = false;
+        } else if (game.abilities.fireball.active) {
+          game.abilities.fireball.count--;
+          game.abilities.fireball.active = false;
+        } else if (game.abilities.multiball.active) {
+          game.abilities.multiball.count--;
+          game.abilities.multiball.active = false;
+        }
+        updateAbilitiesMenu(); // Update the display immediately
+      }
+      
+      // Reset timer for next ball
+      game.ballReleaseTimer = game.ballReleaseDelay;
+    }
+  } else {
+    // Queue is empty
+    game.isShootingQueueActive = false;
+  }
+}
+
+// Update balls
+function updateBalls() {
+// Process shooting queue if active
+  if (game.isShootingQueueActive) {
+    processShootingQueue();
+  }
+  
+  // Update brick wobble animations
+  game.bricks.forEach(brick => {
+    if (brick.isWobbling) {
+      brick.wobbleAngle += brick.wobbleSpeed;
+      brick.wobble = Math.sin(brick.wobbleAngle) * 5;
+      
+      // Gradually reduce wobble
+      brick.wobbleSpeed *= 0.95;
+      if (Math.abs(brick.wobbleSpeed) < 0.1) {
+        brick.isWobbling = false;
+        brick.wobble = 0;
+      }
+    }
+    
+    // Reduce hit time
+    if (brick.hitTime > 0) {
+      brick.hitTime--;
+    }
+  });
+  
+  for (let i = game.balls.length - 1; i >= 0; i--) {
+    const ball = game.balls[i];
+    
+    // Add to trail
+    ball.trail.push({x: ball.x, y: ball.y});
+    if (ball.trail.length > 10) ball.trail.shift();
+    
+    // Update position
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+    
+    // Bounce off walls
+    if (ball.x - ball.radius < 10 || ball.x + ball.radius > canvas.width - 10) {
+      ball.vx = -ball.vx;
+    }
+    if (ball.y - ball.radius < 10) {
+      ball.vy = -ball.vy;
+    }
+    
+    // Check if ball fell off bottom
+    if (ball.y - ball.radius > canvas.height) {
+      game.balls.splice(i, 1);
+      game.activeBalls--;
+      continue;
+    }
+    
+    // Reduce life
+    ball.life--;
+    if (ball.life <= 0) {
+      game.balls.splice(i, 1);
+      game.activeBalls--;
+      continue;
+    }
+    
+    // Check collision with bricks
+    for (let j = game.bricks.length - 1; j >= 0; j--) {
+      const brick = game.bricks[j];
+      
+      // Adjust brick position for wobble
+      const brickX = brick.x + (brick.isWobbling ? brick.wobble : 0);
+      
+      // Simple AABB collision
+if (ball.x + ball.radius > brickX &&
+          ball.x - ball.radius < brickX + brick.width &&
+          ball.y + ball.radius > brick.y &&
+          ball.y - ball.radius < brick.y + brick.height) {
+        
+        // Determine collision side
+        const dx = (ball.x - (brickX + brick.width/2)) / (brick.width/2);
+        const dy = (ball.y - (brick.y + brick.height/2)) / (brick.height/2);
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+          ball.vx = -ball.vx;
+        } else {
+          ball.vy = -ball.vy;
+        }
+        
+        // Apply damage based on ball type
+        let damage = 1;
+        if (ball.type === 'laser') damage = 2;
+        if (ball.type === 'fireball') damage = 3;
+        
+        brick.hp -= damage;
+        brick.hitTime = 10; // For visual effect
+        
+        // Add wobble effect to brick
+        brick.isWobbling = true;
+        brick.wobbleSpeed = 0.5;
+        brick.wobbleAngle = 0;
+        
+        // Play hit sound with varying pitch based on damage
+          if (sounds.hit) {
+          sounds.hit(300 + damage * 100);
+        }
+        
+        // Add score
+        game.score += damage * 10;
+        
+        // Create particles
+        for (let p = 0; p < 5; p++) {
+          game.particles.push({
+            x: ball.x,
+            y: ball.y,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            color: ball.color,
+            size: Math.random() * 3 + 2,
+            life: 30
+          });
+        }
+        
+        // Check if brick is destroyed
+        if (brick.hp <= 0) {
+          // Play destroy sound
+          if (sounds.destroy) sounds.destroy();
+          
+          // Add more particles
+          for (let p = 0; p < 15; p++) {
+            game.particles.push({
+              x: brick.x + brick.width/2,
+              y: brick.y + brick.height/2,
+              vx: (Math.random() - 0.5) * 15,
+              vy: (Math.random() - 0.5) * 15,
+              color: brick.color,
+              size: Math.random() * 4 + 2,
+              life: 50
+            });
+          }
+          
+          // Add explosion particles for 3D effect
+          for (let p = 0; p < 10; p++) {
+            game.particles.push({
+              x: brick.x + brick.width/2,
+              y: brick.y + brick.height/2,
+              vx: (Math.random() - 0.5) * 20,
+              vy: (Math.random() - 0.5) * 20 - 10,
+              color: brick.topColor,
+              size: Math.random() * 5 + 3,
+              life: 40
+            });
+          }
+          
+          // Remove brick
+          game.bricks.splice(j, 1);
+          game.score += 100;
+        }
+        
+        // Small position correction
+        ball.x += ball.vx * 0.5;
+        ball.y += ball.vy * 0.5;
+        
+        break; // One collision per frame
+       }
+    }
+  }
+  
+  // Update particles
+  for (let i = game.particles.length - 1; i >= 0; i--) {
+    const p = game.particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.2; // Gravity
+    p.life--;
+    if (p.life <= 0) {
+      game.particles.splice(i, 1);
+    }
+  }
+  
+  // Check if all balls are gone and shooting queue is empty
+  if (game.balls.length === 0 && !game.isShootingQueueActive) {
+    game.activeBalls = 0;
+    game.canShoot = true;
+  }
+  
+  // Check level complete (only when no balls and queue is empty)
+  if (game.bricks.length === 0 && game.balls.length === 0 && !game.isShootingQueueActive) {
+    levelComplete();
+  }
+  
+  // Check game over (only when no balls and queue is empty)
+  if (game.shotsUsed >= game.totalShots && game.balls.length === 0 && game.bricks.length > 0 && !game.isShootingQueueActive) {
+    gameOver();
+  }
+}
+
+// Draw 3D brick
+function draw3DBrick(brick) {
+  const depth = 5; // 3D depth
+  const brickX = brick.x + (brick.isWobbling ? brick.wobble : 0);
+  const brickY = brick.y;
+  
+  // Shadow effect
+  ctx.fillStyle = brick.shadow;
+  ctx.fillRect(brickX + 5, brickY + 5, brick.width, brick.height);
+  
+  // Draw side face (left)
+  ctx.fillStyle = brick.sideColor;
+  ctx.beginPath();
+  ctx.moveTo(brickX, brickY);
+  ctx.lineTo(brickX - depth, brickY - depth);
+  ctx.lineTo(brickX - depth, brickY + brick.height - depth);
+  ctx.lineTo(brickX, brickY + brick.height);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Draw top face
+  ctx.fillStyle = brick.topColor;
+  ctx.beginPath();
+  ctx.moveTo(brickX, brickY);
+  ctx.lineTo(brickX + brick.width, brickY);
+  ctx.lineTo(brickX + brick.width - depth, brickY - depth);
+  ctx.lineTo(brickX - depth, brickY - depth);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Draw front face with hit effect
+  if (brick.hitTime > 0) {
+    // Flash effect when hit
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = brick.hitTime / 10;
+    ctx.fillRect(brickX, brickY, brick.width, brick.height);
+    ctx.globalAlpha = 1;
+  }
+  
+  // Main front face
+  ctx.fillStyle = brick.color;
+  ctx.fillRect(brickX, brickY, brick.width, brick.height);
+  
+  // Front face border
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(brickX, brickY, brick.width, brick.height);
+  
+  // HP text with 3D effect
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(brick.hp, brickX + brick.width/2, brickY + brick.height/2);
+  
+  // HP text shadow
+  ctx.fillStyle = '#000000';
+  ctx.fillText(brick.hp, brickX + brick.width/2 + 1, brickY + brick.height/2 + 1);
+}
+
+// Draw everything
+function draw() {
+  // Clear canvas  
+  ctx.fillStyle = '#000011';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw particles
+  game.particles.forEach(p => {
+    ctx.globalAlpha = p.life / 50;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  
+  // Draw bricks with 3D effect
+  game.bricks.forEach(brick => {
+    draw3DBrick(brick);
+  });
+  
+  // Draw balls with trails (with decreased size)
+  game.balls.forEach(ball => {
+    // Draw trail
+    ball.trail.forEach((pos, index) => {
+      ctx.globalAlpha = index / ball.trail.length * 0.5;
+      ctx.fillStyle = ball.glow;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, ball.radius * (index / ball.trail.length), 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    
+    // Draw ball glow
+    ctx.fillStyle = ball.glow;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius + 2, 0, Math.PI * 2); // Reduced glow size
+    ctx.fill();
+    
+    // Draw ball with 3D effect
+    const gradient = ctx.createRadialGradient(
+      ball.x, ball.y, 0,
+      ball.x, ball.y, ball.radius
+    );
+    
+    if (ball.type === 'laser') {
+      gradient.addColorStop(0, '#ffffff');
+      gradient.addColorStop(0.5, '#00ffff');
+      gradient.addColorStop(1, '#0088ff');
+    } else if (ball.type === 'fireball') {
+      gradient.addColorStop(0, '#ffff00');
+      gradient.addColorStop(0.5, '#ff3300');
+      gradient.addColorStop(1, '#990000');
+    } else {
+      gradient.addColorStop(0, '#ffffff');
+      gradient.addColorStop(0.5, '#ffff00');
+      gradient.addColorStop(1, '#ffaa00');
+    }
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw ball highlight (smaller due to smaller ball)
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    ctx.arc(ball.x - ball.radius/3, ball.y - ball.radius/3, ball.radius/3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+  
+  // Draw aiming line
+  if (game.aiming && game.canShoot) {
+    const machineX = canvas.width / 2;
+    const machineY = canvas.height - 150;
+    
+    ctx.strokeStyle = '#00ffff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(machineX, machineY);
+    ctx.lineTo(
+      machineX + Math.cos(game.aimAngle) * 200,
+      machineY + Math.sin(game.aimAngle) * 200
+    );
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw aim circle
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(
+      machineX + Math.cos(game.aimAngle) * 200,
+      machineY + Math.sin(game.aimAngle) * 200,
+      machineY + Math.sin(game.aimAngle) * 200,
+      5, 0, Math.PI * 2
+    );
+    ctx.fill();
+  }
+  
+  // Draw shooting queue indicator
+  if (game.isShootingQueueActive && game.shootingQueue.length > 0) {
+    const machineX = canvas.width / 2;
+    const machineY = canvas.height - 150;
+    
+    ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`Balls in queue: ${game.shootingQueue.length}`, machineX, machineY - 30);
+  }
+}
+
+// Level complete
+function levelComplete() {
+  game.state = 'complete';
+  
+  // Calculate stars (1-3 stars based on shots used)
+  const shotsUsed = game.shotsUsed;
+  const totalShots = game.totalShots;
+  const efficiency = shotsUsed / totalShots;
+  
+  let stars = 1;
+  if (efficiency <= 0.5) stars = 3;
+  else if (efficiency <= 0.8) stars = 2;
+  
+  // Save stars for this level
+  game.levelStars[game.currentLevel] = stars;
+  
+  // Unlock only the next level
+  if (game.currentLevel === game.maxUnlockedLevel) {
+    game.maxUnlockedLevel = game.currentLevel + 1;
+    // Play unlock sound
+    if (sounds.unlock) sounds.unlock();
+  }
+  
+  saveGameData();
+  
+  // Update complete menu
+  document.getElementById('completedLevel').textContent = game.currentLevel;
+  document.getElementById('shotsUsed').textContent = shotsUsed;
+  document.getElementById('totalShots').textContent = totalShots;
+  
+  // Set stars with animation
+  const starElements = ['star1', 'star2', 'star3'];
+  starElements.forEach((id, index) => {
+    const star = document.getElementById(id);
+    star.classList.remove('active', 'earned');
+    
+    if (index < stars) {
+      // Add earned class for animation, then active class after delay
+      setTimeout(() => {
+        star.classList.add('earned');
+        setTimeout(() => {
+          star.classList.add('active');
+        }, 800); // After animation completes
+      }, index * 300); // Stagger the animation
+    }
+  });
+  
+  // Show complete menu
+  hideAllMenus();
+  document.getElementById('completeMenu').style.display = 'block';
+}
+
+// Game over
+function gameOver() {
+  game.state = 'gameOver';
+  document.getElementById('finalScore').textContent = game.score;
+  hideAllMenus();
+  document.getElementById('gameOverMenu').style.display = 'block';
+}
+
+// Hide all menus
+function hideAllMenus() {
+  const menus = document.querySelectorAll('.menu');
+  menus.forEach(menu => {
+    menu.style.display = 'none';
+  });
+}
+
+// Generate level grid
+function generateLevelGrid() {
+  const grid = document.getElementById('levelGrid');
+  grid.innerHTML = '';
+  
+  for (let i = 1; i <= 1000; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'level-btn';
+    
+    // Check if level is locked
+    if (i > game.maxUnlockedLevel) {
+      btn.classList.add('locked');
+      btn.disabled = true;
+      
+      // Add lock icon
+      const lockIcon = document.createElement('div');
+      lockIcon.className = 'lock-icon';
+      lockIcon.textContent = '🔒';
+      btn.appendChild(lockIcon);
+      
+      // Add level number
+      const levelNumber = document.createElement('div');
+      levelNumber.className = 'level-number';
+      levelNumber.textContent = i;
+      btn.appendChild(levelNumber);
+    } else {
+      // Level is unlocked
+      if (i < game.currentLevel) {
+        btn.classList.add('completed');
+      }
+      
+      // Add level number
+      const levelNumber = document.createElement('div');
+      levelNumber.className = 'level-number';
+      levelNumber.textContent = i;
+      btn.appendChild(levelNumber);
+      
+      // Add stars for completed levels
+      if (game.levelStars[i]) {
+        const starsContainer = document.createElement('div');
+        starsContainer.className = 'level-stars';
+        
+        const starsEarned = game.levelStars[i];
+        for (let s = 0; s < 3; s++) {
+          const star = document.createElement('div');
+          star.className = 'level-star';
+          if (s < starsEarned) {
+            star.classList.add('earned');
+          } else {
+            star.classList.add('empty');
+          }
+          starsContainer.appendChild(star);
+        }
+        
+        btn.appendChild(starsContainer);
+      }
+      
+      // Add click event for unlocked levels
+      btn.addEventListener('click', () => {
+        if (sounds.click) sounds.click();
+        startLevel(i);
+      });
+    }
+    
+    // Check if this level was just unlocked (for animation)
+    if (i === game.maxUnlockedLevel && i > 1) {
+      // Add animation class after a short delay
+      setTimeout(() => {
+        btn.classList.add('unlock-animation');
+        // Remove the animation class after animation completes
+        setTimeout(() => {
+          btn.classList.remove('unlock-animation');
+        }, 500);
+      }, 100);
+    }
+    
+    grid.appendChild(btn);
+  }
+}
+
+// Initialize event listeners
+function initEventListeners() {
+  // Canvas mouse events for aiming
+  canvas.addEventListener('mousedown', (e) => {
+    if (game.state !== 'playing' || !game.canShoot) return;
+    
+    game.mouseDown = true;
+    game.aiming = true;
+    updateAim(e);
+  });
+  
+  canvas.addEventListener('mousemove', (e) => {
+    if (!game.mouseDown) return;
+    updateAim(e);
+  });
+  
+  canvas.addEventListener('mouseup', (e) => {
+    if (!game.mouseDown || !game.aiming) return;
+    
+    game.mouseDown = false;
+    game.aiming = false;
+    shootBalls(game.aimAngle);
+  });
+  
+  // Touch events for mobile
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (game.state !== 'playing' || !game.canShoot) return;
+    
+    game.mouseDown = true;
+    game.aiming = true;
+    updateAim(e.touches[0]);
+  });
+  
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (!game.mouseDown) return;
+    updateAim(e.touches[0]);
+  });
+  
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (!game.mouseDown || !game.aiming) return;
+    
+    game.mouseDown = false;
+    game.aiming = false;
+    shootBalls(game.aimAngle);
+  });
+  
+  // Update aim angle
+  function updateAim(event) {
+    const machineX = canvas.width / 2;
+    const machineY = canvas.height - 150;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    game.aimX = x;
+    game.aimY = y;
+    game.aimAngle = Math.atan2(y - machineY, x - machineX);
+    
+    // Limit angle to prevent shooting downwards
+    const minAngle = -Math.PI + 0.3;
+    const maxAngle = -0.3;
+    game.aimAngle = Math.max(minAngle, Math.min(maxAngle, game.aimAngle));
+  }
+  
+  // Control buttons with sound
+  document.getElementById('abilitiesBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    hideAllMenus();
+    document.getElementById('abilitiesMenu').style.display = 'block';
+    updateAbilitiesMenu(); // Update counts when opening menu
+  });
+  
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    hideAllMenus();
+    document.getElementById('mainMenu').style.display = 'block';
+  });
+  
+  // Start menu buttons with sound
+  document.getElementById('startBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    startLevel(1);
+  });
+  
+  document.getElementById('continueBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    startLevel(game.currentLevel);
+  });
+  
+  document.getElementById('levelSelectBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    generateLevelGrid();
+    hideAllMenus();
+    document.getElementById('levelMenu').style.display = 'block';
+  });
+  
+  document.getElementById('soundToggle').addEventListener('click', () => {
+    game.soundEnabled = !game.soundEnabled;
+    document.getElementById('soundToggle').textContent = 
+      game.soundEnabled ? 'SOUND: ON' : 'SOUND: OFF';
+    if (sounds.click) sounds.click();
+  });
+  
+  // Level menu buttons with sound
+  document.getElementById('backToMainBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    hideAllMenus();
+    document.getElementById('startMenu').style.display = 'block';
+  });
+  
+  // Main menu buttons with sound
+  document.getElementById('resumeBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    hideAllMenus();
+    game.state = 'playing';
+  });
+  
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    startLevel(game.currentLevel);
+  });
+  
+  document.getElementById('mainMenuBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    hideAllMenus();
+    document.getElementById('startMenu').style.display = 'block';
+  });
+  
+  // Abilities menu buttons with sound - Only activate one ability at a time
+  document.getElementById('laserBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    if (game.abilities.laser.count > 0) {
+      // Deactivate other abilities
+      game.abilities.fireball.active = false;
+      game.abilities.multiball.active = false;
+      // Activate laser
+      game.abilities.laser.active = true;
+      hideAllMenus();
+      updateAbilitiesMenu(); // Update display
+    }
+  });
+  
+  document.getElementById('fireballBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    if (game.abilities.fireball.count > 0) {
+      // Deactivate other abilities
+      game.abilities.laser.active = false;
+      game.abilities.multiball.active = false;
+      // Activate fireball
+      game.abilities.fireball.active = true;
+      hideAllMenus();
+      updateAbilitiesMenu(); // Update display
+    }
+  });
+  
+  document.getElementById('multiballBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    if (game.abilities.multiball.count > 0) {
+      // Deactivate other abilities
+      game.abilities.laser.active = false;
+      game.abilities.fireball.active = false;
+      // Activate multiball
+      game.abilities.multiball.active = true;
+      hideAllMenus();
+      updateAbilitiesMenu(); // Update display
+    }
+  });
+  
+  document.getElementById('closeAbilitiesBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    hideAllMenus();
+  });
+  
+  // Complete menu buttons with sound
+  document.getElementById('nextLevelBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    startLevel(game.currentLevel + 1);
+  });
+  
+document.getElementById('menuAfterCompleteBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    hideAllMenus();
+    document.getElementById('startMenu').style.display = 'block';
+  });
+  
+  // Game over menu buttons with sound
+  document.getElementById('restartGameBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    startLevel(game.currentLevel);
+  });
+  
+document.getElementById('menuAfterGameOverBtn').addEventListener('click', () => {
+    if (sounds.click) sounds.click();
+    hideAllMenus();
+    document.getElementById('startMenu').style.display = 'block';
+  });
+  
+  // Window resize
+  window.addEventListener('resize', () => {
+    initCanvas();
+    createBricks();
+  });
+}
+
+// Main game loop
+function gameLoop() {
+  if (game.state === 'playing') {
+    updateBalls();
+  }
+  draw();
+  updateUI();
+  requestAnimationFrame(gameLoop);
+}
+
+// Initialize game
+function initGame() {
+  initCanvas();
+  initAudio();
+  loadGameData();
+  initEventListeners();
+  
+  // Show start menu
+  document.getElementById('startMenu').style.display = 'block';
+  
+  // Start game loop
+  gameLoop();
+ }
+
+// Start the game when page loads
+window.addEventListener('load', initGame);
+</script>
+</body>
+</html>
