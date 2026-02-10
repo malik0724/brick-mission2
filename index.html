@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Brick Mission Stable - Complete</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>Brick Mission Stable</title>
 <style>
 * {
   margin: 0;
@@ -18,19 +18,41 @@ body {
   width: 100vw;
   height: 100vh;
   touch-action: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 #gameContainer {
   width: 100%;
   height: 100%;
-  position: relative;
-  background: linear-gradient(to bottom, #000011, #001122);
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#backgroundCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
 canvas {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+#gameCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
 }
 
 .border {
@@ -95,7 +117,115 @@ canvas {
   0% { background-position: 0% 0%; }
   100% { background-position: 0% 300%; }
 }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="backgroundCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
+  
+  <div class="border top-border"></div>
+  <div class="border bottom-border"></div>
+  <div class="border left-border"></div>
+  <div class="border right-border"></div>
+    <div class="level-progress">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  
+  <div id="gameStatus">Ready to shoot!</div>
+  
+  <div id="gameUI">
+    <div class="ui-panel">
+      <div class="ui-item">LEVEL: <span id="levelDisplay" class="ui-value">1</span></div>
+      <div class="ui-item">SHOTS: <span id="shotsDisplay" class="ui-value">0/5</span></div>
+    </div>
+    <div class="ui-panel">
+      <div class="ui-item">SCORE: <span id="scoreDisplay" class="ui-value">0</span></div>
+      <div class="ui-item">BRICKS: <span id="bricksDisplay" class="ui-value">0</span></div>
+    </div>
+  </div>
+  
+  <div id="shootingMachine">
+    <div class="shooting-barrel"></div>
+  </div>
+  
+  <div id="shootingGuide">Drag to aim, Release to shoot</div>
+  
+  <div id="ballCounter">ACTIVE BALLS: <span id="activeBalls">0</span></div>
+  
+  <div class="controls">
+    <div class="control-btn" id="abilitiesBtn" title="Abilities">⚡</div>
+    <div class="control-btn" id="menuBtn" title="Menu">≡</div>
+  </div>
+</div>
 
+<div class="menu" id="startMenu">
+  <h2>BRICK MISSION STABLE</h2>
+  <p>Destroy all bricks to advance!</p>
+  <p style="color:#ffff00">Unlocked Levels: <span id="unlockedLevels">1</span>/1000</p>
+  <div style="margin: 20px 0;">
+    <button class="menu-btn" id="startBtn">NEW GAME</button>
+    <button class="menu-btn" id="continueBtn" style="display:none;">CONTINUE GAME</button>
+    <button class="menu-btn" id="levelSelectBtn">LEVEL SELECT</button>
+    <button class="menu-btn" id="soundToggle">SOUND: ON</button>
+  </div>
+</div>
+<div class="menu" id="levelMenu" style="display:none">
+  <h2>SELECT LEVEL</h2>
+  <p>Unlocked: <span id="maxUnlockedDisplay" style="color:#ffff00">1</span>/1000</p>
+  <div id="levelSelectContainer">
+    <div class="level-grid" id="levelGrid"></div>
+  </div>
+  <div style="margin-top: 20px;">
+    <button class="menu-btn" id="backToMainBtn">BACK</button>
+  </div>
+</div>
+
+<div class="menu" id="mainMenu" style="display:none">
+  <h2>GAME MENU</h2>
+  <div style="margin: 20px 0;">
+    <button class="menu-btn" id="resumeBtn">RESUME</button>
+    <button class="menu-btn" id="restartBtn">RESTART LEVEL</button>
+    <button class="menu-btn" id="mainMenuBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<div class="menu" id="abilitiesMenu" style="display:none">
+  <h2>ABILITIES</h2>
+  <div style="margin: 20px 0;">
+    <button class="menu-btn ability-btn" id="laserBtn">LASER BALL (<span id="laserCountDisplay">3</span>)</button>
+    <button class="menu-btn ability-btn" id="fireballBtn">FIRE BALL (<span id="fireballCountDisplay">2</span>)</button>
+    <button class="menu-btn ability-btn" id="multiballBtn">MULTI BALL (<span id="multiballCountDisplay">1</span>)</button>
+    <button class="menu-btn" id="closeAbilitiesBtn">CLOSE</button>
+  </div>
+</div>
+
+<div class="menu" id="completeMenu" style="display:none">
+  <h2 style="color:#00ff00">LEVEL COMPLETE!</h2>
+  <p>You cleared level <span id="completedLevel" style="color:#ffff00">1</span>!</p>
+  <p>Shots Used: <span id="shotsUsed">0</span>/<span id="totalShots">5</span></p>
+  <p>Rating:</p>
+  <div class="stars-container">
+    <div class="star" id="star1"></div>
+    <div class="star" id="star2"></div>
+    <div class="star" id="star3"></div>
+  </div>
+  <div style="margin-top: 20px;">
+    <button class="menu-btn" id="nextLevelBtn">NEXT LEVEL</button>
+    <button class="menu-btn" id="menuAfterCompleteBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<div class="menu" id="gameOverMenu" style="display:none">
+  <h2 style="color:#ff0000">GAME OVER</h2>
+  <p>You ran out of shots!</p>
+  <p>Final Score: <span id="finalScore" style="color:#ffff00">0</span></p>
+  <div style="margin-top: 20px;">
+    <button class="menu-btn" id="restartGameBtn">RESTART LEVEL</button>
+    <button class="menu-btn" id="menuAfterGameOverBtn">MAIN MENU</button>
+  </div>
+</div>
+<style>
 #gameUI {
   position: absolute;
   top: 20px;
@@ -103,29 +233,34 @@ canvas {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 15px;
   z-index: 50;
+  pointer-events: none;
 }
 
 .ui-panel {
-  background: rgba(0, 20, 40, 0.9);
+  background: rgba(0, 20, 40, 0.95);
   border: 2px solid #00ffff;
   border-radius: 10px;
-  padding: 10px 20px;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  padding: 12px 18px;
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+  backdrop-filter: blur(5px);
+  pointer-events: auto;
 }
 
 .ui-item {
   color: #00ffff;
-  font-size: 18px;
-  margin: 5px 0;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+  font-size: 16px;
+  margin: 4px 0;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
+  white-space: nowrap;
 }
 
 .ui-value {
   color: #ffff00;
   font-weight: bold;
   margin-left: 5px;
+  font-size: 18px;
 }
 
 #shootingMachine {
@@ -138,7 +273,7 @@ canvas {
   background: linear-gradient(to bottom, #333, #111);
   border: 3px solid #00ffff;
   border-radius: 30px;
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.7);
+  box-shadow: 0 0 35px rgba(0, 255, 255, 0.8);
   z-index: 40;
   display: flex;
   align-items: center;
@@ -150,7 +285,7 @@ canvas {
   height: 35px;
   background: radial-gradient(circle, #ffaa00, #ff5500);
   border-radius: 50%;
-  box-shadow: 0 0 20px rgba(255, 170, 0, 0.8);
+  box-shadow: 0 0 25px rgba(255, 170, 0, 0.9);
   animation: barrelPulse 1.5s infinite alternate;
 }
 
@@ -161,8 +296,8 @@ canvas {
 
 .controls {
   position: absolute;
-  bottom: 30px;
-  right: 30px;
+  bottom: 25px;
+  right: 25px;
   display: flex;
   gap: 15px;
   z-index: 50;
@@ -180,14 +315,14 @@ canvas {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
   transition: all 0.3s;
   user-select: none;
 }
 
 .control-btn:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+  box-shadow: 0 0 35px rgba(0, 255, 255, 0.9);
 }
 
 .menu {
@@ -195,29 +330,32 @@ canvas {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 20, 40, 0.95);
+  background: rgba(0, 20, 40, 0.98);
   border: 3px solid #00ffff;
   border-radius: 20px;
   padding: 30px;
   z-index: 200;
-  min-width: 400px;
+  width: 90%;
+  max-width: 450px;
   text-align: center;
   display: none;
-  box-shadow: 0 0 50px rgba(0, 255, 255, 0.7);
-  backdrop-filter: blur(5px);
+  box-shadow: 0 0 60px rgba(0, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .menu h2 {
   color: #00ffff;
   margin-bottom: 20px;
-  font-size: 32px;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+  font-size: 30px;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.9);
 }
 
 .menu p {
   color: white;
   margin: 15px 0;
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .menu-btn {
@@ -228,18 +366,19 @@ canvas {
   border-right: 2px solid #0055aa;
   border-bottom: 2px solid #0055aa;
   color: #00ffff;
-  padding: 15px 30px;
-  border-radius: 10px;
-  font-size: 20px;
+  padding: 16px 25px;
+  border-radius: 12px;
+  font-size: 19px;
   cursor: pointer;
   transition: all 0.3s;
-  margin: 10px;
-  min-width: 200px;
+  margin: 10px 5px;
+  width: 100%;
+  max-width: 280px;
   box-shadow: 
-    4px 4px 8px rgba(0, 0, 0, 0.5),
-    -2px -2px 4px rgba(255, 255, 255, 0.1),
-    inset 2px 2px 4px rgba(0, 170, 255, 0.3),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.5);
+    4px 4px 10px rgba(0, 0, 0, 0.6),
+    -2px -2px 5px rgba(255, 255, 255, 0.1),
+    inset 2px 2px 5px rgba(0, 170, 255, 0.4),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.6);
   position: relative;
   overflow: hidden;
 }
@@ -248,19 +387,19 @@ canvas {
   background: linear-gradient(145deg, #003366, #0055aa);
   transform: translateY(-2px);
   box-shadow: 
-    6px 6px 10px rgba(0, 0, 0, 0.6),
-    -3px -3px 6px rgba(255, 255, 255, 0.15),
-    inset 2px 2px 4px rgba(0, 170, 255, 0.4),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.6);
+    6px 6px 12px rgba(0, 0, 0, 0.7),
+    -3px -3px 7px rgba(255, 255, 255, 0.15),
+    inset 2px 2px 5px rgba(0, 170, 255, 0.5),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.7);
 }
 
 .menu-btn:active {
   transform: translateY(1px);
   box-shadow: 
-    2px 2px 4px rgba(0, 0, 0, 0.5),
-    -1px -1px 2px rgba(255, 255, 255, 0.1),
-    inset 4px 4px 8px rgba(0, 0, 0, 0.5),
-    inset -2px -2px 4px rgba(0, 170, 255, 0.3);
+    2px 2px 5px rgba(0, 0, 0, 0.6),
+    -1px -1px 3px rgba(255, 255, 255, 0.1),
+    inset 4px 4px 10px rgba(0, 0, 0, 0.6),
+    inset -2px -2px 5px rgba(0, 170, 255, 0.4);
 }
 
 .ability-btn {
@@ -272,21 +411,22 @@ canvas {
   border-bottom: 2px solid #aa5500;
   color: #ffff00;
   box-shadow: 
-    4px 4px 8px rgba(0, 0, 0, 0.5),
-    -2px -2px 4px rgba(255, 255, 255, 0.1),
-    inset 2px 2px 4px rgba(255, 170, 0, 0.3),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.5);
+    4px 4px 10px rgba(0, 0, 0, 0.6),
+    -2px -2px 5px rgba(255, 255, 255, 0.1),
+    inset 2px 2px 5px rgba(255, 170, 0, 0.4),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.6);
 }
 
 .ability-btn:hover {
   background: linear-gradient(145deg, #663300, #aa6600);
   box-shadow: 
-    6px 6px 10px rgba(0, 0, 0, 0.6),
-    -3px -3px 6px rgba(255, 255, 255, 0.15),
-    inset 2px 2px 4px rgba(255, 170, 0, 0.4),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.6);
+    6px 6px 12px rgba(0, 0, 0, 0.7),
+    -3px -3px 7px rgba(255, 255, 255, 0.15),
+    inset 2px 2px 5px rgba(255, 170, 0, 0.5),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.7);
 }
-
+  </style>
+  <style>
 .level-btn {
   padding: 10px;
   background: linear-gradient(145deg, #002244, #004488);
@@ -296,7 +436,7 @@ canvas {
   border-right: 2px solid #0055aa;
   border-bottom: 2px solid #0055aa;
   color: #00ffff;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -306,16 +446,16 @@ canvas {
   min-height: 70px;
   position: relative;
   box-shadow: 
-    3px 3px 6px rgba(0, 0, 0, 0.4),
-    -1px -1px 3px rgba(255, 255, 255, 0.1);
+    3px 3px 7px rgba(0, 0, 0, 0.5),
+    -1px -1px 4px rgba(255, 255, 255, 0.1);
 }
 
 .level-btn:hover {
   background: linear-gradient(145deg, #003366, #0055aa);
   transform: scale(1.05) translateY(-2px);
   box-shadow: 
-    5px 5px 8px rgba(0, 0, 0, 0.5),
-    -2px -2px 4px rgba(255, 255, 255, 0.15);
+    5px 5px 10px rgba(0, 0, 0, 0.6),
+    -2px -2px 5px rgba(255, 255, 255, 0.15);
 }
 
 .level-btn.locked {
@@ -389,12 +529,14 @@ canvas {
   left: 50%;
   transform: translateX(-50%);
   color: #ffff00;
-  font-size: 18px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 8px 20px;
+  font-size: 17px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 10px 25px;
   border-radius: 15px;
   border: 2px solid #ffff00;
   z-index: 45;
+  box-shadow: 0 0 20px rgba(255, 255, 0, 0.5);
+  backdrop-filter: blur(5px);
 }
 
 #levelSelectContainer {
@@ -402,9 +544,10 @@ canvas {
   overflow-y: auto;
   margin: 20px 0;
   padding: 10px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   border: 2px solid #00ffff;
+  box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.3);
 }
 
 .level-grid {
@@ -470,165 +613,73 @@ canvas {
   transform: translateX(-50%);
   color: #00ffff;
   font-size: 14px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 5px 15px;
-  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 8px 20px;
+  border-radius: 12px;
   border: 2px solid #00ffff;
   z-index: 45;
-  opacity: 0.8;
+  opacity: 0.9;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+  backdrop-filter: blur(5px);
 }
 
 .level-progress {
   position: absolute;
-  top: 90px;
+  top: 85px;
   left: 50%;
   transform: translateX(-50%);
-  width: 80%;
-  height: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 5px;
+  width: 85%;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
   border: 1px solid #00ffff;
   overflow: hidden;
   z-index: 45;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #00ff00, #ffff00);
+  background: linear-gradient(90deg, #00ff00, #ffff00, #ffaa00);
   width: 0%;
   transition: width 0.3s;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
 }
 
 #gameStatus {
   position: absolute;
-  top: 110px;
+  top: 105px;
   left: 50%;
   transform: translateX(-50%);
   color: #00ffff;
   font-size: 16px;
   z-index: 45;
   text-align: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 6px 15px;
+  border-radius: 10px;
+  border: 1px solid #00ffff;
+  backdrop-filter: blur(5px);
 }
 </style>
 </head>
 <body>
-<div id="gameContainer">
-  <canvas id="gameCanvas"></canvas>
-  
-  <div class="border top-border"></div>
-  <div class="border bottom-border"></div>
-  <div class="border left-border"></div>
-  <div class="border right-border"></div>
-  
-  <div class="level-progress">
-    <div class="progress-fill" id="progressFill"></div>
-  </div>
-  
-  <div id="gameStatus">Ready to shoot!</div>
-  
-  <div id="gameUI">
-    <div class="ui-panel">
-      <div class="ui-item">LEVEL: <span id="levelDisplay" class="ui-value">1</span></div>
-      <div class="ui-item">SHOTS: <span id="shotsDisplay" class="ui-value">0/5</span></div>
-    </div>
-    <div class="ui-panel">
-      <div class="ui-item">SCORE: <span id="scoreDisplay" class="ui-value">0</span></div>
-      <div class="ui-item">BRICKS: <span id="bricksDisplay" class="ui-value">0</span></div>
-    </div>
-  </div>
-  
-  <div id="shootingMachine">
-    <div class="shooting-barrel"></div>
-  </div>
-  
-  <div id="shootingGuide">Click/Drag to aim, Release to shoot</div>
-  
-  <div id="ballCounter">ACTIVE BALLS: <span id="activeBalls">0</span></div>
-  
-  <div class="controls">
-    <div class="control-btn" id="abilitiesBtn" title="Abilities">⚡</div>
-    <div class="control-btn" id="menuBtn" title="Menu">≡</div>
-  </div>
-</div>
-
-<div class="menu" id="startMenu">
-  <h2>BRICK MISSION STABLE</h2>
-  <p>Destroy all bricks to advance!</p>
-  <p style="color:#ffff00">Unlocked Levels: <span id="unlockedLevels">1</span>/1000</p>
-  <div style="margin: 20px 0;">
-    <button class="menu-btn" id="startBtn">NEW GAME</button>
-    <button class="menu-btn" id="continueBtn">CONTINUE</button>
-    <button class="menu-btn" id="levelSelectBtn">LEVEL SELECT</button>
-    <button class="menu-btn" id="soundToggle">SOUND: ON</button>
-  </div>
-</div>
-
-<div class="menu" id="levelMenu" style="display:none">
-  <h2>SELECT LEVEL</h2>
-  <p>Unlocked: <span id="maxUnlockedDisplay" style="color:#ffff00">1</span>/1000</p>
-  <div id="levelSelectContainer">
-    <div class="level-grid" id="levelGrid"></div>
-  </div>
-  <div style="margin-top: 20px;">
-    <button class="menu-btn" id="backToMainBtn">BACK</button>
-  </div>
-</div>
-
-<div class="menu" id="mainMenu" style="display:none">
-  <h2>GAME MENU</h2>
-  <div style="margin: 20px 0;">
-    <button class="menu-btn" id="resumeBtn">RESUME</button>
-    <button class="menu-btn" id="restartBtn">RESTART LEVEL</button>
-    <button class="menu-btn" id="mainMenuBtn">MAIN MENU</button>
-  </div>
-</div>
-
-<div class="menu" id="abilitiesMenu" style="display:none">
-  <h2>ABILITIES</h2>
-  <div style="margin: 20px 0;">
-    <button class="menu-btn ability-btn" id="laserBtn">LASER BALL (<span id="laserCountDisplay">3</span>)</button>
-    <button class="menu-btn ability-btn" id="fireballBtn">FIRE BALL (<span id="fireballCountDisplay">2</span>)</button>
-    <button class="menu-btn ability-btn" id="multiballBtn">MULTI BALL (<span id="multiballCountDisplay">1</span>)</button>
-    <button class="menu-btn" id="closeAbilitiesBtn">CLOSE</button>
-  </div>
-</div>
-
-<div class="menu" id="completeMenu" style="display:none">
-  <h2 style="color:#00ff00">LEVEL COMPLETE!</h2>
-  <p>You cleared level <span id="completedLevel" style="color:#ffff00">1</span>!</p>
-  <p>Shots Used: <span id="shotsUsed">0</span>/<span id="totalShots">5</span></p>
-  <p>Rating:</p>
-  <div class="stars-container">
-    <div class="star" id="star1"></div>
-    <div class="star" id="star2"></div>
-    <div class="star" id="star3"></div>
-  </div>
-  <div style="margin-top: 20px;">
-    <button class="menu-btn" id="nextLevelBtn">NEXT LEVEL</button>
-    <button class="menu-btn" id="menuAfterCompleteBtn">MAIN MENU</button>
-  </div>
-</div>
-
-<div class="menu" id="gameOverMenu" style="display:none">
-  <h2 style="color:#ff0000">GAME OVER</h2>
-  <p>You ran out of shots!</p>
-  <p>Final Score: <span id="finalScore" style="color:#ffff00">0</span></p>
-  <div style="margin-top: 20px;">
-    <button class="menu-btn" id="restartGameBtn">RESTART LEVEL</button>
-    <button class="menu-btn" id="menuAfterGameOverBtn">MAIN MENU</button>
-  </div>
-</div>
-
-<script>
+  <script>
 // ============================================
-// COMPLETE WORKING GAME - FIXED VERSION
+// ENHANCED GAME WITH MULTI-COLOR BLOCKS & DYNAMIC BACKGROUND
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const bgCanvas = document.getElementById('backgroundCanvas');
+const bgCtx = bgCanvas.getContext('2d');
 
 let audioContext;
 let sounds = {};
+
+// Background stars for dynamic background
+let stars = [];
+let nebulas = [];
 
 function initAudio() {
   try {
@@ -773,11 +824,126 @@ const game = {
   },
   soundEnabled: true,
   levelSeed: 0,
-  particles: []
+  particles: [],
+  hasSavedGame: false
 };
-    function initCanvas() {
+
+function initCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  bgCanvas.style.width = '100%';
+  bgCanvas.style.height = '100%';
+}
+  </script>
+  <script>
+function createStars() {
+  stars = [];
+  const starCount = Math.min(300, Math.floor((canvas.width * canvas.height) / 1000));
+  
+  for (let i = 0; i < starCount; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 3 + 0.5,
+      speed: Math.random() * 0.3 + 0.1,
+      brightness: Math.random() * 0.7 + 0.3,
+      twinkleSpeed: Math.random() * 0.05 + 0.02,
+      twinklePhase: Math.random() * Math.PI * 2,
+      layer: Math.floor(Math.random() * 3) + 1 // 1: close, 2: medium, 3: far
+    });
+  }
+  
+  // Create nebulas (colorful background clouds)
+  nebulas = [];
+  const nebulaCount = 5;
+  for (let i = 0; i < nebulaCount; i++) {
+    nebulas.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      width: Math.random() * 400 + 200,
+      height: Math.random() * 300 + 150,
+      color: `hsla(${Math.random() * 360}, 70%, ${Math.random() * 30 + 30}%, 0.1)`,
+      speedX: (Math.random() - 0.5) * 0.1,
+      speedY: (Math.random() - 0.5) * 0.1
+    });
+  }
+}
+
+function drawBackground() {
+  // Draw space gradient
+  const gradient = bgCtx.createLinearGradient(0, 0, 0, bgCanvas.height);
+  gradient.addColorStop(0, '#000010');
+  gradient.addColorStop(0.5, '#000033');
+  gradient.addColorStop(1, '#000066');
+  
+  bgCtx.fillStyle = gradient;
+  bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+  
+  // Draw nebulas
+  nebulas.forEach(nebula => {
+    const gradient = bgCtx.createRadialGradient(
+      nebula.x, nebula.y, 0,
+      nebula.x, nebula.y, nebula.width / 2
+    );
+    gradient.addColorStop(0, nebula.color);
+    gradient.addColorStop(1, 'transparent');
+    
+    bgCtx.fillStyle = gradient;
+    bgCtx.beginPath();
+    bgCtx.arc(nebula.x, nebula.y, nebula.width / 2, 0, Math.PI * 2);
+    bgCtx.fill();
+    
+    // Move nebula slowly
+    nebula.x += nebula.speedX;
+    nebula.y += nebula.speedY;
+    
+    // Wrap around edges
+    if (nebula.x < -nebula.width) nebula.x = bgCanvas.width + nebula.width;
+    if (nebula.x > bgCanvas.width + nebula.width) nebula.x = -nebula.width;
+    if (nebula.y < -nebula.height) nebula.y = bgCanvas.height + nebula.height;
+    if (nebula.y > bgCanvas.height + nebula.height) nebula.y = -nebula.height;
+  });
+  
+  // Draw stars
+  stars.forEach(star => {
+    // Calculate twinkle effect
+    const twinkle = Math.sin(Date.now() * star.twinkleSpeed + star.twinklePhase) * 0.3 + 0.7;
+    const currentBrightness = star.brightness * twinkle;
+    
+    // Draw star with glow effect
+    const glowRadius = star.size * 2;
+    const gradient = bgCtx.createRadialGradient(
+      star.x, star.y, 0,
+      star.x, star.y, glowRadius
+    );
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${currentBrightness})`);
+    gradient.addColorStop(0.5, `rgba(200, 220, 255, ${currentBrightness * 0.5})`);
+    gradient.addColorStop(1, 'transparent');
+    
+    bgCtx.fillStyle = gradient;
+    bgCtx.beginPath();
+    bgCtx.arc(star.x, star.y, glowRadius, 0, Math.PI * 2);
+    bgCtx.fill();
+    
+    // Draw star core
+    bgCtx.fillStyle = `rgba(255, 255, 255, ${currentBrightness})`;
+    bgCtx.beginPath();
+    bgCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+    bgCtx.fill();
+    
+    // Move star based on layer (parallax effect)
+    star.y += star.speed * (1 / star.layer);
+    
+    // Wrap around edges
+    if (star.y > bgCanvas.height) {
+      star.y = 0;
+      star.x = Math.random() * bgCanvas.width;
+    }
+  });
 }
 
 function loadGameData() {
@@ -786,12 +952,43 @@ function loadGameData() {
     try {
       const data = JSON.parse(saved);
       game.maxUnlockedLevel = data.maxUnlockedLevel || 1;
-      game.score = data.score || 0;
       game.levelStars = data.levelStars || {};
+      
+      // Check if there's a saved game in progress
+      const savedGame = localStorage.getItem('brickMissionCurrentGame');
+      if (savedGame) {
+        try {
+          const gameData = JSON.parse(savedGame);
+          game.hasSavedGame = true;
+          // Show continue button
+          document.getElementById('continueBtn').style.display = 'block';
+        } catch (e) {
+          console.log('No valid saved game found');
+          game.hasSavedGame = false;
+          document.getElementById('continueBtn').style.display = 'none';
+        }
+      } else {
+        game.hasSavedGame = false;
+        document.getElementById('continueBtn').style.display = 'none';
+      }
+      
       updateUI();
     } catch (e) {
-      console.log('Error loading save');
+      console.log('Error loading save, starting fresh');
+      // For new players, reset to level 1
+      game.maxUnlockedLevel = 1;
+      game.currentLevel = 1;
+      game.levelStars = {};
+      game.hasSavedGame = false;
+      document.getElementById('continueBtn').style.display = 'none';
     }
+  } else {
+    // New player - initialize fresh
+    game.maxUnlockedLevel = 1;
+    game.currentLevel = 1;
+    game.levelStars = {};
+    game.hasSavedGame = false;
+    document.getElementById('continueBtn').style.display = 'none';
   }
 }
 
@@ -802,6 +999,36 @@ function saveGameData() {
     levelStars: game.levelStars
   };
   localStorage.setItem('brickMissionSave', JSON.stringify(data));
+}
+
+function saveCurrentGame() {
+  // Save current game state for continue feature
+  if (game.state === 'playing' && game.bricks.length > 0) {
+    const gameState = {
+      state: game.state,
+      currentLevel: game.currentLevel,
+      score: game.score,
+      shotsUsed: game.shotsUsed,
+      totalShots: game.totalShots,
+      bricks: game.bricks,
+      totalBricks: game.totalBricks,
+      abilities: {
+        laser: { ...game.abilities.laser },
+        fireball: { ...game.abilities.fireball },
+        multiball: { ...game.abilities.multiball }
+      },
+      savedAt: Date.now()
+    };
+    localStorage.setItem('brickMissionCurrentGame', JSON.stringify(gameState));
+    game.hasSavedGame = true;
+    document.getElementById('continueBtn').style.display = 'block';
+  }
+}
+
+function clearCurrentGame() {
+  localStorage.removeItem('brickMissionCurrentGame');
+  game.hasSavedGame = false;
+  document.getElementById('continueBtn').style.display = 'none';
 }
 
 function updateUI() {
@@ -822,11 +1049,12 @@ function updateUI() {
     if (game.activeBalls > 0) {
       document.getElementById('gameStatus').textContent = `${game.activeBalls} balls active`;
     } else if (game.canShoot) {
-      document.getElementById('gameStatus').textContent = `Ready to shoot! (${game.totalShots - game.shotsUsed} shots left)`;
+      const shotsLeft = game.totalShots - game.shotsUsed;
+      document.getElementById('gameStatus').textContent = `Ready! (${shotsLeft} shots left)`;
     } else if (game.isShootingQueueActive) {
-      document.getElementById('gameStatus').textContent = `Releasing balls...`;
+      document.getElementById('gameStatus').textContent = `Shooting ${game.shootingQueue.length} balls...`;
     } else {
-      document.getElementById('gameStatus').textContent = 'Waiting...';
+      document.getElementById('gameStatus').textContent = 'Aim and shoot!';
     }
   }
 }
@@ -841,7 +1069,8 @@ function seededRandom(seed) {
   let x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
-
+  </script>
+  <script>
 function createBricks() {
   game.bricks = [];
   game.levelSeed = game.currentLevel * 12345;
@@ -862,6 +1091,16 @@ function createBricks() {
   
   let brickCount = 0;
   
+  // Define a vibrant color palette for bricks
+  const colorPalette = [
+    '#FF5252', '#FF4081', '#E040FB', '#7C4DFF', '#536DFE',
+    '#448AFF', '#40C4FF', '#18FFFF', '#64FFDA', '#69F0AE',
+    '#B2FF59', '#EEFF41', '#FFFF00', '#FFD740', '#FFAB40',
+    '#FF6E40', '#FF3D00', '#8BC34A', '#4CAF50', '#009688',
+    '#00BCD4', '#03A9F4', '#2196F3', '#3F51B5', '#673AB7',
+    '#9C27B0', '#E91E63', '#F44336', '#FF9800', '#FFC107'
+  ];
+  
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const seed = game.levelSeed + r * 100 + c;
@@ -869,7 +1108,37 @@ function createBricks() {
       
       if (rand > 0.3) {
         const hp = Math.min(99, baseHP + r + Math.floor(game.currentLevel / 2));
-        const h = Math.min(120, 120 - (hp * 1.2));
+        
+        // Pick a random color from the palette
+        const colorIndex = Math.floor(seededRandom(seed * 2) * colorPalette.length);
+        const brickColor = colorPalette[colorIndex];
+        
+        // Create lighter and darker versions for 3D effect
+        const tempElement = document.createElement('div');
+        tempElement.style.color = brickColor;
+        document.body.appendChild(tempElement);
+        const computedColor = getComputedStyle(tempElement).color;
+        document.body.removeChild(tempElement);
+        
+        // Parse RGB values
+        const rgbMatch = computedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        let topColor, sideColor;
+        
+        if (rgbMatch) {
+          const r = parseInt(rgbMatch[1]);
+          const g = parseInt(rgbMatch[2]);
+          const b = parseInt(rgbMatch[3]);
+          
+          // Create lighter version for top
+          topColor = `rgb(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)})`;
+          
+          // Create darker version for side
+          sideColor = `rgb(${Math.max(0, r - 50)}, ${Math.max(0, g - 50)}, ${Math.max(0, b - 50)})`;
+        } else {
+          // Fallback colors
+          topColor = brickColor;
+          sideColor = brickColor;
+        }
         
         const brick = {
           x: startX + c * (brickWidth + 5),
@@ -878,13 +1147,10 @@ function createBricks() {
           height: brickHeight,
           hp: hp,
           maxHP: hp,
-          h: h,
-          s: 100,
-          l: 50,
-          color: `hsl(${h}, 100%, 50%)`,
-          topColor: `hsl(${h}, 100%, 70%)`,
-          sideColor: `hsl(${h}, 100%, 30%)`,
-          shadow: `hsl(${h}, 100%, 20%)`,
+          color: brickColor,
+          topColor: topColor,
+          sideColor: sideColor,
+          shadow: `rgba(0, 0, 0, 0.5)`,
           hitTime: 0,
           wobble: 0,
           wobbleSpeed: 0,
@@ -899,9 +1165,33 @@ function createBricks() {
   
   game.totalBricks = brickCount;
   
+  // Ensure there are at least some bricks
   if (game.bricks.length < 5) {
     for (let i = 0; i < 8; i++) {
-      const h = Math.min(120, 120 - (baseHP * 3));
+      const colorIndex = Math.floor(Math.random() * colorPalette.length);
+      const brickColor = colorPalette[colorIndex];
+      
+      const tempElement = document.createElement('div');
+      tempElement.style.color = brickColor;
+      document.body.appendChild(tempElement);
+      const computedColor = getComputedStyle(tempElement).color;
+      document.body.removeChild(tempElement);
+      
+      const rgbMatch = computedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      let topColor, sideColor;
+      
+      if (rgbMatch) {
+        const r = parseInt(rgbMatch[1]);
+        const g = parseInt(rgbMatch[2]);
+        const b = parseInt(rgbMatch[3]);
+        
+        topColor = `rgb(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)})`;
+        sideColor = `rgb(${Math.max(0, r - 50)}, ${Math.max(0, g - 50)}, ${Math.max(0, b - 50)})`;
+      } else {
+        topColor = brickColor;
+        sideColor = brickColor;
+      }
+      
       const brick = {
         x: canvas.width/2 - 180 + (i % 4) * 95,
         y: 150 + Math.floor(i / 4) * 45,
@@ -909,13 +1199,10 @@ function createBricks() {
         height: 30,
         hp: baseHP,
         maxHP: baseHP,
-        h: h,
-        s: 100,
-        l: 50,
-        color: `hsl(${h}, 100%, 50%)`,
-        topColor: `hsl(${h}, 100%, 70%)`,
-        sideColor: `hsl(${h}, 100%, 30%)`,
-        shadow: `hsl(${h}, 100%, 20%)`,
+        color: brickColor,
+        topColor: topColor,
+        sideColor: sideColor,
+        shadow: `rgba(0, 0, 0, 0.5)`,
         hitTime: 0,
         wobble: 0,
         wobbleSpeed: 0,
@@ -926,12 +1213,16 @@ function createBricks() {
       game.totalBricks++;
     }
   }
-    }
-    function startLevel(level) {
+}
+
+function startLevel(level) {
   if (level > game.maxUnlockedLevel) {
     alert('Level locked! Complete previous levels to unlock.');
     return;
   }
+  
+  // IMPORTANT: Reset score when starting a new level
+  game.score = 0;
   
   game.state = 'playing';
   game.currentLevel = level;
@@ -949,6 +1240,7 @@ function createBricks() {
   game.isShootingQueueActive = false;
   game.ballReleaseTimer = 0;
   
+  // Reset abilities for new level
   game.abilities.laser.count = 3;
   game.abilities.fireball.count = 2;
   game.abilities.multiball.count = 1;
@@ -960,6 +1252,79 @@ function createBricks() {
   updateUI();
   updateAbilitiesMenu();
   hideAllMenus();
+  
+  // Clear any saved game when starting fresh
+  clearCurrentGame();
+}
+
+function continueGame() {
+  const savedGame = localStorage.getItem('brickMissionCurrentGame');
+  if (!savedGame) {
+    alert('No saved game found! Starting new game.');
+    startLevel(game.currentLevel);
+    return;
+  }
+  
+  try {
+    const gameData = JSON.parse(savedGame);
+    
+    // Check if saved game is too old (more than 1 day)
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (Date.now() - gameData.savedAt > oneDay) {
+      if (!confirm('Saved game is from more than 1 day ago. Load anyway?')) {
+        return;
+      }
+    }
+    
+    // Restore game state
+    game.state = gameData.state;
+    game.currentLevel = gameData.currentLevel;
+    game.score = gameData.score; // Keep the saved score for continue
+    game.shotsUsed = gameData.shotsUsed;
+    game.totalShots = gameData.totalShots;
+    game.bricks = gameData.bricks;
+    game.totalBricks = gameData.totalBricks;
+    game.activeBalls = 0; // Start with no active balls
+    game.balls = [];
+    game.particles = [];
+    game.aiming = false;
+    game.canShoot = true;
+    game.mouseDown = false;
+    game.shootingQueue = [];
+    game.isShootingQueueActive = false;
+    game.ballReleaseTimer = 0;
+    
+    // Restore abilities
+    if (gameData.abilities) {
+      game.abilities.laser = { ...gameData.abilities.laser };
+      game.abilities.fireball = { ...gameData.abilities.fireball };
+      game.abilities.multiball = { ...gameData.abilities.multiball };
+    } else {
+      game.abilities.laser.count = 3;
+      game.abilities.fireball.count = 2;
+      game.abilities.multiball.count = 1;
+      game.abilities.laser.active = false;
+      game.abilities.fireball.active = false;
+      game.abilities.multiball.active = false;
+    }
+    
+    updateUI();
+    updateAbilitiesMenu();
+    hideAllMenus();
+    
+    // Show success message
+    document.getElementById('gameStatus').textContent = `Continued level ${game.currentLevel}`;
+    setTimeout(() => {
+      if (game.canShoot) {
+        document.getElementById('gameStatus').textContent = `Ready! (${game.totalShots - game.shotsUsed} shots left)`;
+      }
+    }, 2000);
+    
+  } catch (e) {
+    console.log('Error loading saved game:', e);
+    alert('Error loading saved game. Starting new game instead.');
+    startLevel(game.currentLevel);
+  }
 }
 
 function createBall(x, y, angle, power = 1, type = 'normal') {
@@ -1052,6 +1417,9 @@ function shootBalls(angle) {
   }
   
   game.ballReleaseTimer = game.ballReleaseDelay;
+  
+  // Save game after shooting
+  saveCurrentGame();
   updateUI();
 }
 
@@ -1083,7 +1451,8 @@ function processShootingQueue() {
     game.isShootingQueueActive = false;
   }
 }
-
+  </script>
+  <script>
 function updateBalls() {
   if (game.isShootingQueueActive) {
     processShootingQueue();
@@ -1198,11 +1567,15 @@ function updateBalls() {
           
           game.bricks.splice(j, 1);
           game.score += 100;
+          
+          // Save after brick destroyed
+          saveCurrentGame();
         }
         
         ball.x += ball.vx * 0.5;
         ball.y += ball.vy * 0.5;
         
+        updateUI();
         break;
       }
     }
@@ -1222,6 +1595,9 @@ function updateBalls() {
   if (game.balls.length === 0 && !game.isShootingQueueActive) {
     game.activeBalls = 0;
     game.canShoot = true;
+    
+    // Save when all balls are gone
+    saveCurrentGame();
   }
   
   if (game.bricks.length === 0 && game.balls.length === 0 && !game.isShootingQueueActive) {
@@ -1231,8 +1607,9 @@ function updateBalls() {
   if (game.shotsUsed >= game.totalShots && game.balls.length === 0 && game.bricks.length > 0 && !game.isShootingQueueActive) {
     gameOver();
   }
-    }
-    function draw3DBrick(brick) {
+}
+
+function draw3DBrick(brick) {
   const depth = 5;
   const brickX = brick.x + (brick.isWobbling ? brick.wobble : 0);
   const brickY = brick.y;
@@ -1283,8 +1660,8 @@ function updateBalls() {
 }
 
 function draw() {
-  ctx.fillStyle = '#000011';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Game elements are drawn on top of the background
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   game.particles.forEach(p => {
     ctx.globalAlpha = p.life / 50;
@@ -1380,7 +1757,7 @@ function draw() {
     ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`Balls in queue: ${game.shootingQueue.length}`, machineX, machineY - 30);
+    ctx.fillText(`Shooting: ${game.shootingQueue.length}`, machineX, machineY - 30);
   }
 }
 
@@ -1403,6 +1780,7 @@ function levelComplete() {
   }
   
   saveGameData();
+  clearCurrentGame(); // Clear saved game when level is complete
   
   document.getElementById('completedLevel').textContent = game.currentLevel;
   document.getElementById('shotsUsed').textContent = shotsUsed;
@@ -1430,6 +1808,7 @@ function levelComplete() {
 function gameOver() {
   game.state = 'gameOver';
   document.getElementById('finalScore').textContent = game.score;
+  clearCurrentGame(); // Clear saved game when game over
   hideAllMenus();
   document.getElementById('gameOverMenu').style.display = 'block';
 }
@@ -1439,8 +1818,9 @@ function hideAllMenus() {
   menus.forEach(menu => {
     menu.style.display = 'none';
   });
-    }
-    function generateLevelGrid() {
+}
+
+function generateLevelGrid() {
   const grid = document.getElementById('levelGrid');
   grid.innerHTML = '';
   
@@ -1581,18 +1961,22 @@ function initEventListeners() {
   
   document.getElementById('menuBtn').addEventListener('click', () => {
     if (sounds.click) sounds.click();
+    // Save game when opening menu
+    if (game.state === 'playing') {
+      saveCurrentGame();
+    }
     hideAllMenus();
     document.getElementById('mainMenu').style.display = 'block';
   });
   
   document.getElementById('startBtn').addEventListener('click', () => {
     if (sounds.click) sounds.click();
-    startLevel(1);
+    startLevel(game.currentLevel);
   });
   
   document.getElementById('continueBtn').addEventListener('click', () => {
     if (sounds.click) sounds.click();
-    startLevel(game.currentLevel);
+    continueGame();
   });
   
   document.getElementById('levelSelectBtn').addEventListener('click', () => {
@@ -1694,11 +2078,23 @@ function initEventListeners() {
   
   window.addEventListener('resize', () => {
     initCanvas();
-    createBricks();
+    createStars();
+    if (game.state === 'playing') {
+      createBricks();
+    }
   });
+  
+  // Auto-save every 30 seconds when playing
+  setInterval(() => {
+    if (game.state === 'playing') {
+      saveCurrentGame();
+    }
+  }, 30000);
 }
 
 function gameLoop() {
+  drawBackground();
+  
   if (game.state === 'playing') {
     updateBalls();
   }
@@ -1710,10 +2106,17 @@ function gameLoop() {
 function initGame() {
   initCanvas();
   initAudio();
+  createStars();
   loadGameData();
   initEventListeners();
   
   document.getElementById('startMenu').style.display = 'block';
+  
+  // Check for saved game
+  if (game.hasSavedGame) {
+    document.getElementById('continueBtn').style.display = 'block';
+  }
+  
   gameLoop();
 }
 
